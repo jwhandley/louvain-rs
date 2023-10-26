@@ -1,0 +1,6 @@
+/target
+*.svg
+*.data
+*.data.old
+data/*
+notebooks/*
