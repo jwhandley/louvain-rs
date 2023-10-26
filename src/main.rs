@@ -9,8 +9,7 @@ fn main() {
     let graph = io::read_adjacency_matrix(&path);
     // let path = PathBuf::from("data/karate.net");
     // let graph = io::read_pajek(&path);
-    // let path = PathBuf::from("data/networkatlas51.txt");
-    // let graph = io::read_edgelist(&path);
+    
 
     // Start perfcount
     let start = std::time::Instant::now();
