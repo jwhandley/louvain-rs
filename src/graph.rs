@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use std::collections::HashMap;
+use std::rc::Rc;
 
 pub type NodeIndex = usize;
 
@@ -32,9 +32,9 @@ pub struct Edge {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Graph {
     pub nodes: Vec<Node>,
-    edges: Vec<Edge>,
-    pub in_adjacency: HashMap<NodeIndex, Vec<Edge>>,
-    pub out_adjacency: HashMap<NodeIndex, Vec<Edge>>,
+    edges: Vec<Rc<Edge>>,
+    pub in_adjacency: Vec<Vec<Rc<Edge>>>,
+    pub out_adjacency: Vec<Vec<Rc<Edge>>>,
 }
 
 impl Graph {
@@ -42,8 +42,8 @@ impl Graph {
         Graph {
             nodes: Vec::new(),
             edges: Vec::new(),
-            in_adjacency: HashMap::new(),
-            out_adjacency: HashMap::new(),
+            in_adjacency: Vec::new(),
+            out_adjacency: Vec::new(),
         }
     }
 
@@ -51,7 +51,7 @@ impl Graph {
         self.out_degrees().iter().sum()
     }
 
-    pub fn edges(&self) -> impl Iterator<Item = &Edge> {
+    pub fn edges(&self) -> impl Iterator<Item = &Rc<Edge>> {
         self.edges.iter()
     }
 
@@ -60,7 +60,7 @@ impl Graph {
     }
 
     pub fn edge_weights(&self) -> impl Iterator<Item = f64> + '_ {
-        self.in_adjacency.values().flatten().map(|e| e.weight)
+        self.in_adjacency.iter().flatten().map(|e| e.weight)
     }
 
     pub fn add_node(&mut self, node_index: NodeIndex, id: &str) {
@@ -70,36 +70,32 @@ impl Graph {
             in_degree: 0.0,
             out_degree: 0.0,
         };
-        self.in_adjacency.entry(node_index).or_default();
-        self.out_adjacency.entry(node_index).or_default();
+        self.in_adjacency.push(Vec::new());
+        self.out_adjacency.push(Vec::new());
         self.nodes.push(node);
     }
 
     pub fn add_edge(&mut self, source: NodeIndex, target: NodeIndex, weight: f64) {
-        let edge = Edge {
+        let edge = Rc::new(Edge {
             source,
             target,
             weight,
-        };
+        });
         self.nodes[edge.source].out_degree += edge.weight;
         self.nodes[edge.target].in_degree += edge.weight;
-        self.out_adjacency
-            .entry(edge.source)
-            .or_default()
+        self.out_adjacency[edge.source]
             .push(edge.clone());
-        self.in_adjacency
-            .entry(edge.target)
-            .or_default()
+        self.in_adjacency[edge.target]
             .push(edge.clone());
         self.edges.push(edge);
     }
 
-    pub fn in_edges(&self, node: NodeIndex) -> &Vec<Edge> {
-        &self.in_adjacency[&node]
+    pub fn in_edges(&self, node: NodeIndex) -> impl Iterator<Item = &Rc<Edge>> + '_ {
+        self.in_adjacency[node].iter()
     }
 
-    pub fn out_edges(&self, node: NodeIndex) -> &Vec<Edge> {
-        &self.out_adjacency[&node]
+    pub fn out_edges(&self, node: NodeIndex) -> impl Iterator<Item = &Rc<Edge>> + '_ {
+        self.out_adjacency[node].iter()
     }
 
     pub fn in_degrees(&self) -> Vec<f64> {
@@ -112,22 +108,19 @@ impl Graph {
 
     pub fn neighbors(&self, node: NodeIndex) -> impl Iterator<Item = NodeIndex> + '_ {
         self.out_edges(node)
-            .iter()
             .map(|e| e.target)
-            .chain(self.in_edges(node).iter().map(|e| e.source))
+            .chain(self.in_edges(node).map(|e| e.source))
     }
 
     pub fn edges_connecting(
         &self,
         source: NodeIndex,
         target: NodeIndex,
-    ) -> impl Iterator<Item = &Edge> {
+    ) -> impl Iterator<Item = &Rc<Edge>> {
         self.out_edges(source)
-            .iter()
             .filter(move |&e| e.target == target)
             .chain(
                 self.in_edges(source)
-                    .iter()
                     .filter(move |&e| e.source == target),
             )
     }

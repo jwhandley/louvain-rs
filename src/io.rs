@@ -83,8 +83,8 @@ pub fn read_adjacency_matrix(path: &Path) -> Graph {
     let mut graph = Graph::new();
 
     // Add nodes to the graph
-    for i in 0..header.len() {
-        graph.add_node(i, header[i]);
+    for (i, item) in header.iter().enumerate() {
+        graph.add_node(i, item);
     }
 
     // Add edges to the graph

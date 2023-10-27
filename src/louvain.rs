@@ -1,7 +1,8 @@
 use rand::seq::SliceRandom;
 
 use crate::graph::{Graph, NodeIndex};
-use std::collections::{HashMap, HashSet};
+use rustc_hash::FxHashMap as HashMap;
+use rustc_hash::FxHashSet as HashSet;
 
 type CommunityIndex = usize;
 pub type Community = HashSet<NodeIndex>;
@@ -14,20 +15,17 @@ pub fn calculate_modularity(graph: &Graph, partition: &Partition, resolution: f6
     let in_degrees = graph.in_degrees();
 
     for community in partition.iter() {
-        let sigma_tot = community
-            .iter()
-            .map(|node| out_degrees[*node] + in_degrees[*node])
-            .sum::<f64>();
-
+        let mut sigma_tot = 0.0;
         let mut sigma_in = 0.0;
 
         for node in community.iter() {
-            graph.out_edges(*node).iter().for_each(|edge| {
+            sigma_tot += out_degrees[*node] + in_degrees[*node];
+            graph.out_edges(*node).for_each(|edge| {
                 if community.contains(&edge.target) {
                     sigma_in += edge.weight;
                 }
             });
-            graph.in_edges(*node).iter().for_each(|edge| {
+            graph.in_edges(*node).for_each(|edge| {
                 if community.contains(&edge.source) {
                     sigma_in += edge.weight;
                 }
@@ -45,13 +43,13 @@ fn gen_graph(graph: &Graph, partition: &Partition) -> Graph {
         new_graph.add_node(idx, &idx.to_string());
     }
 
-    let mut node2com = HashMap::with_capacity(graph.node_count());
+    let mut node2com = HashMap::default();
     for (idx, com) in partition.iter().enumerate() {
         for node in com {
             node2com.insert(node, idx);
         }
     }
-    let mut tmp_edges = HashMap::new();
+    let mut tmp_edges = HashMap::default();
     for edge in graph.edges() {
         let source = node2com[&edge.source];
         let target = node2com[&edge.target];
@@ -70,7 +68,7 @@ fn merge_partition(old_partition: &Partition, new_partition: &Partition) -> Part
     // We need to merge the communities in the old partition to match the new partition
 
     let mut to_merge: HashMap<CommunityIndex, Community> =
-        HashMap::with_capacity(new_partition.len());
+        HashMap::default();
 
     for (idx, community) in new_partition.iter().enumerate() {
         for old_community in community {
@@ -88,27 +86,26 @@ fn neighbor_weights(
     nbrs: &HashMap<usize, f64>,
     node2com: &HashMap<NodeIndex, CommunityIndex>,
 ) -> HashMap<CommunityIndex, f64> {
-    let mut weights2com = HashMap::new();
+    let mut weights2com = HashMap::default();
     for (nbr, &wt) in nbrs.iter() {
-        let com = node2com[&nbr];
-        *weights2com.entry(com).or_insert(0.0) += wt;
+        *weights2com.entry(node2com[nbr]).or_insert(0.0) += wt;
     }
     weights2com
 }
 
 fn optimize_modularity(graph: &Graph, resolution: f64) -> Partition {
-    let mut node2com: HashMap<NodeIndex, usize> = HashMap::new();
-    let mut new_partition = Vec::new();
+    let mut node2com: HashMap<NodeIndex, usize> = HashMap::default();
+    let mut new_partition = Vec::with_capacity(graph.node_count());
     for node in graph.node_indices() {
         node2com.insert(node, node);
-        let mut community = Community::new();
+        let mut community = Community::default();
         community.insert(node);
         new_partition.push(community);
     }
 
-    let mut nbrs: HashMap<NodeIndex, HashMap<NodeIndex, f64>> = HashMap::new();
+    let mut nbrs: Vec<HashMap<NodeIndex, f64>> = Vec::new();
     for node in graph.node_indices() {
-        let mut nbr = HashMap::new();
+        let mut nbr = HashMap::default();
         for edge in graph.out_edges(node) {
             *nbr.entry(edge.target).or_insert(0.0) += edge.weight;
         }
@@ -117,7 +114,7 @@ fn optimize_modularity(graph: &Graph, resolution: f64) -> Partition {
             *nbr.entry(edge.source).or_insert(0.0) += edge.weight;
         }
         nbr.entry(node).or_insert(0.0);
-        nbrs.insert(node, nbr);
+        nbrs.push(nbr);
     }
     
 
@@ -128,19 +125,19 @@ fn optimize_modularity(graph: &Graph, resolution: f64) -> Partition {
     let mut sigma_tot_out = out_degrees.clone();
     let m = graph.size();
 
+    let mut nodes = graph.node_indices().collect::<Vec<_>>();
+    nodes.shuffle(&mut rand::thread_rng());
+
     let mut n_moves = 1;
     while n_moves > 0 {
         n_moves = 0;
-
-        let mut nodes = graph.node_indices().collect::<Vec<_>>();
-        nodes.shuffle(&mut rand::thread_rng());
 
         for node in nodes.iter() {
             let initial_com = node2com[node];
             let mut best_com = initial_com;
             let mut best_delta = 0.0;
 
-            let mut weights2com = neighbor_weights(&nbrs[&node], &node2com);
+            let mut weights2com = neighbor_weights(&nbrs[*node], &node2com);
             weights2com.entry(initial_com).or_insert(0.0);
 
             let in_degree = in_degrees[*node];
