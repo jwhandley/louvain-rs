@@ -5,7 +5,7 @@ pub type NodeIndex = usize;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Node {
-    id: String,
+    pub id: String,
     pub index: NodeIndex,
     pub in_degree: f64,
     pub out_degree: f64,
