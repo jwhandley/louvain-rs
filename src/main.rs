@@ -15,12 +15,13 @@ fn main() {
     let start = std::time::Instant::now();
     let partition = louvain::louvain_communities(&graph, 1.0, 1e-7);
 
-    println!("Communities: {}", partition.len());
-    println!(
-        "Modularity: {}",
-        louvain::calculate_modularity(&graph, &partition, 1.0)
-    );
-    println!("Finished in {}ms", start.elapsed().as_millis());
+    // println!("Communities: {}", partition.len());
+    // println!(
+    //     "Modularity: {}",
+    //     louvain::calculate_modularity(&graph, &partition, 1.0)
+    // );
+    // println!("Finished in {}ms", start.elapsed().as_millis());
+    println!("{}", start.elapsed().as_millis());
 
     let save_path = PathBuf::from("output/msoa-communities.csv");
     io::write_partition_to_csv(&partition, &graph, &save_path).expect("Should have been able to write to directory.");
