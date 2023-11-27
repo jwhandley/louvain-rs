@@ -83,10 +83,8 @@ impl Graph {
         });
         self.nodes[edge.source].out_degree += edge.weight;
         self.nodes[edge.target].in_degree += edge.weight;
-        self.out_adjacency[edge.source]
-            .push(edge.clone());
-        self.in_adjacency[edge.target]
-            .push(edge.clone());
+        self.out_adjacency[edge.source].push(edge.clone());
+        self.in_adjacency[edge.target].push(edge.clone());
         self.edges.push(edge);
     }
 
@@ -119,10 +117,7 @@ impl Graph {
     ) -> impl Iterator<Item = &Rc<Edge>> {
         self.out_edges(source)
             .filter(move |&e| e.target == target)
-            .chain(
-                self.in_edges(source)
-                    .filter(move |&e| e.source == target),
-            )
+            .chain(self.in_edges(source).filter(move |&e| e.source == target))
     }
 
     pub fn node_indices(&self) -> impl Iterator<Item = NodeIndex> + '_ {

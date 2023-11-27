@@ -67,8 +67,7 @@ fn merge_partition(old_partition: &Partition, new_partition: &Partition) -> Part
     // Nodes in new partition correspond to communities in old partition
     // We need to merge the communities in the old partition to match the new partition
 
-    let mut to_merge: HashMap<CommunityIndex, Community> =
-        HashMap::default();
+    let mut to_merge: HashMap<CommunityIndex, Community> = HashMap::default();
 
     for (idx, community) in new_partition.iter().enumerate() {
         for old_community in community {
@@ -116,7 +115,6 @@ fn optimize_modularity(graph: &Graph, resolution: f64) -> Partition {
         nbr.entry(node).or_insert(0.0);
         nbrs.push(nbr);
     }
-    
 
     let in_degrees = graph.in_degrees();
     let out_degrees = graph.out_degrees();

@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 use crate::graph::Graph;
 use crate::louvain::Partition;
-use std::path::Path;
 use anyhow::Result;
+use std::path::Path;
 
 pub fn read_pajek(path: &Path) -> Graph {
     // Example format:
@@ -104,14 +104,11 @@ pub fn read_adjacency_matrix(path: &Path) -> Graph {
 pub fn write_partition_to_csv(partition: &Partition, graph: &Graph, path: &Path) -> Result<()> {
     let mut writer = csv::Writer::from_path(path)?;
 
-    writer.write_record(["id","area"])?;
+    writer.write_record(["id", "area"])?;
 
     for (idx, community) in partition.iter().enumerate() {
         for node in community.iter() {
-            writer.write_record([
-                graph.nodes[*node].id.as_str(),
-                idx.to_string().as_str()
-            ])?;
+            writer.write_record([graph.nodes[*node].id.as_str(), idx.to_string().as_str()])?;
         }
     }
     Ok(())

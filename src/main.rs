@@ -9,7 +9,6 @@ fn main() {
     let graph = io::read_adjacency_matrix(&path);
     // let path = PathBuf::from("data/karate.net");
     // let graph = io::read_pajek(&path);
-    
 
     // Start perfcount
     let start = std::time::Instant::now();
@@ -24,5 +23,6 @@ fn main() {
     println!("{}", start.elapsed().as_millis());
 
     let save_path = PathBuf::from("output/msoa-communities.csv");
-    io::write_partition_to_csv(&partition, &graph, &save_path).expect("Should have been able to write to directory.");
+    io::write_partition_to_csv(&partition, &graph, &save_path)
+        .expect("Should have been able to write to directory.");
 }
